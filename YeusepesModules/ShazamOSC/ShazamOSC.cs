@@ -62,6 +62,20 @@ namespace YeusepesModules.ShazamOSC
         protected override void OnPreLoad()
         {
             LogDebug("OnPreLoad: registering parameters and settings.");
+
+            // Initialize _liveTimer to avoid null reference exceptions
+            _liveTimer = new DispatcherTimer();
+            _liveTimer.Interval = TimeSpan.FromSeconds(25);
+            _liveTimer.Tick += (s, e) =>
+            {
+                LogDebug("LiveListening timer ticked, triggering recognition.");
+                if (LiveListening)
+                {
+                    _recognitionCts?.Cancel();
+                    _recognitionCts = new CancellationTokenSource();
+                    _ = Task.Run(() => RecognizeFromDesktop(_recognitionCts.Token), _recognitionCts.Token);
+                }
+            };
             RegisterParameter<bool>(ShazamParameters.Recognize,
                 "ShazamOSC/Recognize",
                 ParameterMode.ReadWrite,
